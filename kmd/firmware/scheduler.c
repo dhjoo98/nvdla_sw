@@ -1069,6 +1069,8 @@ dla_execute_task(void *engine_context, void *task_data, void *config_data)
 	int32_t ret;
 	struct dla_engine *engine = (struct dla_engine *)engine_context;
 
+	//before task assignment, check if things are set to go
+
 	if (engine == NULL) {
 		dla_error("engine is NULL\n");
 		ret = ERR(INVALID_INPUT);
@@ -1088,6 +1090,7 @@ dla_execute_task(void *engine_context, void *task_data, void *config_data)
 		goto complete;
 	}
 
+	//actually assign the task
 	engine->task->task_data = task_data;
 	engine->config_data = config_data;
 	engine->network = &network;
