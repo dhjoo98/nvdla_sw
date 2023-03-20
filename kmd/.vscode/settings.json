@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "nvdla_interface.h": "c",
+        "*.txt": "c"
+    }
+}
