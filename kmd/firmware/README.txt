@@ -66,7 +66,7 @@ dla_data_read
 
 dla_data_write
     write data from local buffer to UMD buffer (dma-buf)
-    usage on schedular.c 's op_completion
+    usage on schedular.c -> op_completion
 
 and now fns that use param 'destination' 
     DESTINATION_PROCESSOR : Memory will be access by processor running firmware
@@ -123,7 +123,7 @@ fns that include "Enter: __func__ "
     4) dla_prepare_operation(dla_processor, dla_common_op_desc, roi_index, group_number)
         (Enter: )
         utils_get_free_group
-        debug information trace ("processor: processor_name, group_id, rdma_group_id, available)
+        debug information trace ("processor: processor_name, group_id, rdma_group_id, available")
         ('update operation descriptor')
         dla_read_config
         group->pending = 1
@@ -145,7 +145,7 @@ fns that include "Enter: __func__ "
         ('find out if operation if already programmed' , goto enable_op)
             thus an operation must be 'programmed' before 'enabled'
         enable_op flow:
-        (if event is triggered as a part of same group's programming, skip enable, as it will be programmed after the current one is complete )
+        (if event is triggered as a part of same groups programming, skip enable, as it will be programmed after the current one is complete )
             ('Enable processor_name, operation index, ROI')
             enable(group)
             dla_op_enabled(group)
@@ -153,7 +153,7 @@ fns that include "Enter: __func__ "
 
     7) dla_submit_operation(dla_processor, dla_common_op_desc, ROI_index)
         (Enter: )
-        ('Prepare processor_name, operation index, ROI, dep_count op_desc->dependency_count)
+        ('Prepare processor_name, operation index, ROI, dep_count op_desc->dependency_count')
         dla_prepare_operation
         dla_program_operation(processor, processor->group[group_id])
         if dependency_count == 0, dla_enable_operation
@@ -166,13 +166,14 @@ fns that include "Enter: __func__ "
             if done processing all ROI for current op, load next op
             else, load the same op for next ROI 
                 because we break down convolution by 2d-regions 
-        ('Dequeue op from processor_name, index, processor_ROI_index)
+        ('Dequeue op from processor_name, index, processor_ROI_index')
         dla_get_op_desc 
         dla_submit_operation 
         dla_put_op_desc(consumer)
         (Exit: )
 
     9) dla_op_completion(dla_processor, dla_processor group)
+        //called by dla_handle_events[#12]
         (Enter: )
         **what is this 'STAT_ENABLE'
         ('Completed processor_name, operation index, ROI')
@@ -237,6 +238,7 @@ fns that include "Enter: __func__ "
         (Exit: )
     
     12) dla_handle_events
+        //called by dla_process_events[15]
         (Enter: )
         dunno why, put specific handling of CDMA
             dla_update_consumers(group, op_desc, CDMA_WT_DONE)
@@ -246,13 +248,13 @@ fns that include "Enter: __func__ "
         (Exit: )
 
 **other methods of schedular.c
-    dla_update_dependency(consumer, op_desc, event, roi_index)
+    13) dla_update_dependency(consumer, op_desc, event, roi_index)
         dla_get_engine()
         'Update dependency operation index, ROI, DEP_COUNT'
         (if op_desc_dependency_count==0)
             'enable processor_name in function_name, as dependency are resolved'
         
-    dla_update_consumer(group, op, event)
+    14) dla_update_consumer(group, op, event)
         dla_get_engine()
         // if all branches go accordingly. 
         for i in DPA_OP_NUM:
@@ -261,7 +263,7 @@ fns that include "Enter: __func__ "
         if (ret) (Failed to update dependency for fused parent)
 
     *the below 3 are the basic workflow methods.     
-    dla_process_events(engine_context, task_complete)
+    15) dla_process_events(engine_context, task_complete)
         loop:    
             dla_handle_events(processor)
 
@@ -288,7 +290,7 @@ With diagram from weekly report,
 *the start of Trace is 
 dla_execute_task (engine_context, task_data, config_data)  
     /**
-        * Execute task selected by task scheduler * so task schedular must come BEFORE 
+        * Execute task selected by task scheduler * 
         *
         * 1. Read network configuration for the task
         * 2. Initiate processors with head of list for same op
@@ -369,3 +371,43 @@ dla_execute_task (engine_context, task_data, config_data)
 
 //aside from the call stack above, there is another thread that handles interrupt from hardware
     // called the dla_isr_handler. 
+
+
+---- 
+Then there is handling event Trace:
+
+from nvdla_core_callbacks.c (callbacks are references to executable code that is paased as an argument to another piece of code)
+~~so these must be called from UMD? 
+    nvdla_engine_isr(irq, data)
+        spin_lock_irqsave
+        dla_isr_handler
+        complete
+        spin_unblock_irqrestore
+    return IRQ_HANDLED
+
+    nvdla_task_submit(nvdla_dev, task)
+        dla_execute_task
+        while (1)
+            wait_for_completion
+            spin_lock_irqsave
+            dla_process_events
+            spin_unblock_irqrestore
+        dla_clear_task
+    return err 
+
+dla_isr_handler : will be called on a separate API with dla_process_events(), but will share lock with it, thus become concurrent
+
+dla_process_events(engine_context, task_complete)
+    for i in DLA_OP_NUM
+        dla_handle_events[#12](processor) 
+            (Enter: dla_handle_events)
+                //dunno why, put specific handling of CDMA
+            dla_update_consumers(group, op_desc, CDMA_WT_DONE)
+            dla_update_consumers(group, op_desc, CDMA_DT_DONE)
+                'Handle complete after all other events'
+            dla_op_completion[#9](processor, group)
+                (Enter: dla_op_completion)
+                '~~ HWLs done, totally ~ layers'
+                dla_dequeue_operation[#8]
+                    'Dequeue op from processor_name, index, processor_ROI_index'
+            (Exit: dla_handle_events)
