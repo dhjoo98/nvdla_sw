@@ -27,6 +27,8 @@ dla_register_driver (Core Engine Interface - register driver with firmware durin
 
 "scheduler.c"
 dla_execute_task (Core Engine Interface - Driver submits task info for execution)
+    dla_execute_task(void *engine_context, void *task_data, void *config_data)
+    Parameters are all pointers, thus must be passed from User-mode. 
     initilize sub-engines and start task execution. Events received from hardware triggers furthur tasks. 
     cf) uses dla_task_descriptor structure, to include all info on task.
     **MUST DO MORE INDEPTH ANALYSIS OF THIS FN 
@@ -94,10 +96,8 @@ dla_get_dma_address (nvdla_core_callbacks.c)
 
 ---
 Function Block Programming 
-so when are the individual engine firmware called? Schedular classifies task, then pass on to somewhere? 
-
-"conv.c" &  other engine firmwares. 
-
+so from schedular, individual engine firmwares are called ("conv.c" &  other engine firmwares)
+    schedular.c/program() → engine_data.c/struct dla_engine/each_processor→program() 
 
 ---
 Trace analysis of LeNet 
@@ -159,7 +159,7 @@ fns that include "Enter: __func__ "
         if dependency_count == 0, dla_enable_operation
         (Exit: )
 
-    8) dla_dequeue_operation(dla_engine, dla_processor)
+    8) dla_dequeue_operation(struct dla_engine *engine, struct dla_processor *processor)
         'Dequeue next operation of same type from list of operations'
         (Enter: )
         a loop for processing all ROIs 
@@ -202,7 +202,8 @@ fns that include "Enter: __func__ "
             dla_put_op_desc
             (Exit: )
 
-    10) dla_read_network_config(dla_engine)
+    10) dla_read_network_config(struct dla_engine *engine)
+        struct dla_task *task = engine->task;
         (Enter: )
         'Read address list from DRAM to DMEM'
             dla_read_address_list(engine)
@@ -356,14 +357,14 @@ dla_execute_task (engine_context, task_data, config_data)
                     (Exit: dla_enable_operation)
                 (Exit: dla_submit_operation)
             dla_put_op_desc
-            dla_dequeue_operation
+            dla_dequeue_operation //Dequeue next operation of same type from list of operations
                 (Enter: dla_dequeue_operation)
                 (if operation index is final for that hardware operation)
                     'exit processor_name as there is no further operation' ~ the end for that hardware layer engine.
                     goto exit;
                 'Dequeue op from processor_name, index, ROI'
                  dla_get_op_desc()
-                 dla_submit_operation
+                 dla_submit_operation //(go recursive)
                  dla_put_op_desc()
                 exit:
                     ("Exit: dla_dequeue_operation")  

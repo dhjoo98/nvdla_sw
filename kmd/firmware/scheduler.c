@@ -613,6 +613,9 @@ dla_op_completion(struct dla_processor *processor,
 
 #if STAT_ENABLE
 	if (engine->stat_enable == (uint32_t)1) {
+
+		dla_info("Entering STAT_ENABLE if clause - Getting stat data for %s op_index %d\n", processor->name, group->op_desc->index);
+
 		processor->get_stat_data(processor, group);
 
 		processor->dump_stat(processor);
@@ -636,6 +639,8 @@ dla_op_completion(struct dla_processor *processor,
 					0);
 		if (ret < 0)
 			dla_error("Failed to write stats to DMA memory\n");
+		
+		dla_info("Exiting STAT_ENABLE if clause - for %s op_index %d\n", processor->name, group->op_desc->index);
 	}
 #endif /* STAT_ENABLE */
 
