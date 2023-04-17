@@ -612,14 +612,14 @@ dla_op_completion(struct dla_processor *processor,
 	op_desc = group->op_desc;
 
 #if STAT_ENABLE
-	if (engine->stat_enable == (uint32_t)1) {
+	if (engine->stat_enable == (uint32_t)1) { //directly printing stats
 
 		dla_info("Entering STAT_ENABLE if clause - Getting stat data for %s op_index %d\n", processor->name, group->op_desc->index);
 
 		processor->get_stat_data(processor, group);
 
 		processor->dump_stat(processor);
-
+		/*
 		stat_data_address = (uint64_t)(engine->task->stat_data_addr +
 				(sizeof(union dla_stat_container) *
 				(uint64_t)(engine->network->num_operations) *
@@ -629,9 +629,9 @@ dla_op_completion(struct dla_processor *processor,
 				(sizeof(union dla_stat_container) *
 				(uint64_t)op_desc->index));
 
-		/**
-		 * Flush stat descriptor to DRAM
-		 */
+		
+		// Flush stat descriptor to DRAM
+		
 		ret = dla_data_write(engine->driver_context, task->task_data,
 					(void *)(processor->stat_data_desc),
 					stat_base,
@@ -639,7 +639,7 @@ dla_op_completion(struct dla_processor *processor,
 					0);
 		if (ret < 0)
 			dla_error("Failed to write stats to DMA memory\n");
-		
+		*/
 		dla_info("Exiting STAT_ENABLE if clause - for %s op_index %d\n", processor->name, group->op_desc->index);
 	}
 #endif /* STAT_ENABLE */
@@ -884,7 +884,7 @@ dla_read_network_config(struct dla_engine *engine)
 			goto exit;
 		}
 	}
-
+/* printing_stat_directly : if I don't dump to DRAM, this won't be necessary? 
 #if STAT_ENABLE
 	if (network.stat_list_index != -1) {
 		ret = dla_get_dma_address(engine->driver_context,
@@ -897,7 +897,8 @@ dla_read_network_config(struct dla_engine *engine)
 			goto exit;
 		}
 	}
-#endif /* STAT_ENABLE */
+#endif // STAT_ENABLE 
+*/
 
 exit:
 	dla_debug("Exit:%s status=%d\n", __func__, ret);
@@ -1117,7 +1118,7 @@ dla_execute_task(void *engine_context, void *task_data, void *config_data)
 		goto complete;
 
 #if STAT_ENABLE
-	if (network.stat_list_index != -1)
+	// if (network.stat_list_index != -1) printing_stat_directly
 		engine->stat_enable = 1;
 #endif /* STAT_ENABLE */
 
