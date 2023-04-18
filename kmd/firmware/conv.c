@@ -149,23 +149,27 @@ void
 dla_conv_stat_data(struct dla_processor *processor,
 					struct dla_processor_group *group)
 {
+	dla_info("2-1. Entered conv_stat_data\n");
 	uint64_t end_time = 0;
-	struct dla_conv_stat_desc *conv_stat;
-
-	conv_stat = &processor->stat_data_desc->conv_stat;
-
+	struct dla_conv_stat_desc *new_conv_stat;
+	dla_info("2-2. Retreiving conv_stat pointer\n");
+	new_conv_stat = &processor->stat_data_desc->conv_stat;
+	dla_info("2-3. Successfully retreived conv_stat_pointer\n");
 	end_time = dla_get_time_us();
-
-	conv_stat->data_read_stall = cdma_reg_read(D_PERF_DAT_READ_STALL);
-	conv_stat->weight_read_stall = cdma_reg_read(D_PERF_WT_READ_STALL);
-	conv_stat->data_read_latency = cdma_reg_read(D_PERF_DAT_READ_LATENCY);
-	conv_stat->weight_read_latency = cdma_reg_read(D_PERF_WT_READ_LATENCY);
-	conv_stat->nan_data_num = cdma_reg_read(D_NAN_INPUT_DATA_NUM);
-	conv_stat->nan_weight_num = cdma_reg_read(D_NAN_INPUT_WEIGHT_NUM);
-	conv_stat->inf_data_num = cdma_reg_read(D_INF_INPUT_DATA_NUM);
-	conv_stat->inf_weight_num = cdma_reg_read(D_INF_INPUT_WEIGHT_NUM);
-	conv_stat->saturation_count = cacc_reg_read(D_OUT_SATURATION);
-	conv_stat->runtime = (uint32_t)(end_time - group->start_time);
+	dla_info('2-4. Entering access to processor stat_regs\n');
+	//dla_info("attempt to access struct: %u\n", conv_stat->data_read_stall);
+	processor->stat_data_desc->conv_stat->data_read_stall = cdma_reg_read(D_PERF_DAT_READ_STALL);
+	dla_info('2-5. completed accessing stat reg and store on processor_context\n');
+	new_conv_stat->weight_read_stall = cdma_reg_read(D_PERF_WT_READ_STALL);
+	new_conv_stat->data_read_latency = cdma_reg_read(D_PERF_DAT_READ_LATENCY);
+	new_conv_stat->weight_read_latency = cdma_reg_read(D_PERF_WT_READ_LATENCY);
+	new_conv_stat->nan_data_num = cdma_reg_read(D_NAN_INPUT_DATA_NUM);
+	new_conv_stat->nan_weight_num = cdma_reg_read(D_NAN_INPUT_WEIGHT_NUM);
+	new_conv_stat->inf_data_num = cdma_reg_read(D_INF_INPUT_DATA_NUM);
+	new_conv_stat->inf_weight_num = cdma_reg_read(D_INF_INPUT_WEIGHT_NUM);
+	new_conv_stat->saturation_count = cacc_reg_read(D_OUT_SATURATION);
+	new_conv_stat->runtime = (uint32_t)(end_time - group->start_time);
+	dla_info('2-5. *** Completed access to stat_regs\n');
 }
 
 void
@@ -224,6 +228,7 @@ dla_conv_enable(struct dla_processor_group *group)
 	} while (!(reg & MASK(CDMA_S_CBUF_FLUSH_STATUS_0, FLUSH_DONE)));
 
 	if (engine->stat_enable == (uint32_t)1) {
+		
 		cdma_reg_write(D_PERF_ENABLE, 1);
 		group->start_time = dla_get_time_us();
 	}

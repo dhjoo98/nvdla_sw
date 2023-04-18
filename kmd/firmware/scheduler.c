@@ -612,26 +612,29 @@ dla_op_completion(struct dla_processor *processor,
 	op_desc = group->op_desc;
 
 #if STAT_ENABLE
+	dla_info("1. Entering STAT_ENABLE\n");
 	if (engine->stat_enable == (uint32_t)1) { //directly printing stats
 
-		dla_info("Entering STAT_ENABLE if clause - Getting stat data for %s op_index %d\n", processor->name, group->op_desc->index);
+		dla_info("2. Entered STAT_ENABLE if clause - Getting stat data for %s op_index %d\n", processor->name, group->op_desc->index);
 
 		processor->get_stat_data(processor, group);
-
+		dla_info("3. Completed get_stat_data\n");
 		processor->dump_stat(processor);
+		
 		/*
 		stat_data_address = (uint64_t)(engine->task->stat_data_addr +
 				(sizeof(union dla_stat_container) *
 				(uint64_t)(engine->network->num_operations) *
 				(uint64_t)(op_desc->roi_index)));
 
-		stat_base = (stat_data_address +
-				(sizeof(union dla_stat_container) *
+		stat_base = (stat_dat		(sizeof(union dla_stat_container) *
 				(uint64_t)op_desc->index));
 
-		
+		a_address +
+		*/
 		// Flush stat descriptor to DRAM
 		
+		/*
 		ret = dla_data_write(engine->driver_context, task->task_data,
 					(void *)(processor->stat_data_desc),
 					stat_base,
