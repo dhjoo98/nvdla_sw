@@ -151,25 +151,52 @@ dla_conv_stat_data(struct dla_processor *processor,
 {
 	dla_info("2-1. Entered conv_stat_data\n");
 	uint64_t end_time = 0;
-	struct dla_conv_stat_desc *new_conv_stat;
+	struct dla_conv_stat_desc *conv_stat = &processor->stat_data_desc->conv_stat;
+	union dla_stat_container *stat_data_desc = processor->stat_data_desc;
 	dla_info("2-2. Retreiving conv_stat pointer\n");
-	new_conv_stat = &processor->stat_data_desc->conv_stat;
+	//new_conv_stat = &processor->stat_data_desc->conv_stat; // -> has precedence over & 
+	dla_info("Resulting input processor pointer value %p\n", processor);
+	dla_info("Resulting stat_data_desc pointer value %p\n", stat_data_desc);
+	dla_info("Resulting conv_stat pointer value %p\n", conv_stat);
 	dla_info("2-3. Successfully retreived conv_stat_pointer\n");
 	end_time = dla_get_time_us();
 	dla_info('2-4. Entering access to processor stat_regs\n');
 	//dla_info("attempt to access struct: %u\n", conv_stat->data_read_stall);
-	processor->stat_data_desc->conv_stat->data_read_stall = cdma_reg_read(D_PERF_DAT_READ_STALL);
+	conv_stat->data_read_stall = cdma_reg_read(D_PERF_DAT_READ_STALL);
+	//processor->stat_data_desc->conv_stat->data_read_stall = cdma_reg_read(D_PERF_DAT_READ_STALL);
 	dla_info('2-5. completed accessing stat reg and store on processor_context\n');
-	new_conv_stat->weight_read_stall = cdma_reg_read(D_PERF_WT_READ_STALL);
-	new_conv_stat->data_read_latency = cdma_reg_read(D_PERF_DAT_READ_LATENCY);
-	new_conv_stat->weight_read_latency = cdma_reg_read(D_PERF_WT_READ_LATENCY);
-	new_conv_stat->nan_data_num = cdma_reg_read(D_NAN_INPUT_DATA_NUM);
-	new_conv_stat->nan_weight_num = cdma_reg_read(D_NAN_INPUT_WEIGHT_NUM);
-	new_conv_stat->inf_data_num = cdma_reg_read(D_INF_INPUT_DATA_NUM);
-	new_conv_stat->inf_weight_num = cdma_reg_read(D_INF_INPUT_WEIGHT_NUM);
-	new_conv_stat->saturation_count = cacc_reg_read(D_OUT_SATURATION);
-	new_conv_stat->runtime = (uint32_t)(end_time - group->start_time);
+	conv_stat->weight_read_stall = cdma_reg_read(D_PERF_WT_READ_STALL);
+	conv_stat->data_read_latency = cdma_reg_read(D_PERF_DAT_READ_LATENCY);
+	conv_stat->weight_read_latency = cdma_reg_read(D_PERF_WT_READ_LATENCY);
+	conv_stat->nan_data_num = cdma_reg_read(D_NAN_INPUT_DATA_NUM);
+	conv_stat->nan_weight_num = cdma_reg_read(D_NAN_INPUT_WEIGHT_NUM);
+	conv_stat->inf_data_num = cdma_reg_read(D_INF_INPUT_DATA_NUM);
+	conv_stat->inf_weight_num = cdma_reg_read(D_INF_INPUT_WEIGHT_NUM);
+	conv_stat->saturation_count = cacc_reg_read(D_OUT_SATURATION);
+	conv_stat->runtime = (uint32_t)(end_time - group->start_time);
 	dla_info('2-5. *** Completed access to stat_regs\n');
+
+	//version: directly printout
+	dla_info("2-1. Entered conv_stat_data\n");
+	uint64_t end_time = 0;
+	end_time = dla_get_time_us();
+		dla_info("now creating local structs for keeping\n");
+	struct dla_conv_stat_desc stat, *statPtr;
+	statPtr = &stat;
+		dla_info("Now entering cdma_reg_read\n");
+	statPtr->data_read_stall = cdma_reg_read(D_PERF_DAT_READ_STALL);
+	dla_info('Ver2] Successfully accessed the first reg\n');
+	statPtr->weight_read_stall = cdma_reg_read(D_PERF_WT_READ_STALL);
+	statPtr->data_read_latency = cdma_reg_read(D_PERF_DAT_READ_LATENCY);
+	statPtr->weight_read_latency = cdma_reg_read(D_PERF_WT_READ_LATENCY);
+	statPtr->nan_data_num = cdma_reg_read(D_NAN_INPUT_DATA_NUM);
+	statPtr->nan_weight_num = cdma_reg_read(D_NAN_INPUT_WEIGHT_NUM);
+	statPtr->inf_data_num = cdma_reg_read(D_INF_INPUT_DATA_NUM);
+	statPtr->inf_weight_num = cdma_reg_read(D_INF_INPUT_WEIGHT_NUM);
+	statPtr->saturation_count = cacc_reg_read(D_OUT_SATURATION);
+	statPtr->runtime = (uint32_t)(end_time - group->start_time);
+	dla_info('2-5. *** Completed access to stat_regs\n');
+	dla_debug_conv_stats(statPtr);
 }
 
 void
